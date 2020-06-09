@@ -4,7 +4,7 @@ import static edu.iis.mto.testreactor.dishwasher.Status.DOOR_OPEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.*;
 
 import edu.iis.mto.testreactor.dishwasher.engine.Engine;
 import edu.iis.mto.testreactor.dishwasher.engine.EngineException;
@@ -14,6 +14,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -109,6 +110,26 @@ class DishWasherTest {
         assertEquals(expectedResult.getStatus(), result.getStatus());
     }
 
+    @Test
+    void properProgramShouldCallDoorDirtFilterWaterPumpAndEngine () throws PumpException, EngineException {
+        ProgramConfiguration program = properProgram();
+
+        Mockito.when(door.closed()).thenReturn(true);
+        Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
+
+        dishWasher.start(program);
+
+        InOrder callOrder = inOrder(door, dirtFilter, waterPump, engine);
+        callOrder.verify(door).closed();
+        callOrder.verify(dirtFilter).capacity();
+        callOrder.verify(waterPump).pour(any());
+        callOrder.verify(engine).runProgram(any());
+        callOrder.verify(waterPump).drain();
+        callOrder.verify(waterPump).pour(any());
+        callOrder.verify(engine).runProgram(any());
+        callOrder.verify(waterPump).drain();
+
+    }
 
 
     private ProgramConfiguration properProgram() {

@@ -3,8 +3,12 @@ package edu.iis.mto.testreactor.dishwasher;
 import static edu.iis.mto.testreactor.dishwasher.Status.DOOR_OPEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 import edu.iis.mto.testreactor.dishwasher.engine.Engine;
+import edu.iis.mto.testreactor.dishwasher.engine.EngineException;
+import edu.iis.mto.testreactor.dishwasher.pump.PumpException;
 import edu.iis.mto.testreactor.dishwasher.pump.WaterPump;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +74,34 @@ class DishWasherTest {
 
         RunResult result = dishWasher.start(program);
         RunResult expectedResult =  RunResult.builder().withStatus(Status.ERROR_FILTER).build();
+
+        assertEquals(expectedResult.getStatus(), result.getStatus());
+    }
+
+    @Test
+    void ifEngineFailsShouldResultInProgramError () throws EngineException {
+        ProgramConfiguration program = properProgram();
+
+        Mockito.when(door.closed()).thenReturn(true);
+        Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
+        doThrow(EngineException.class).when(engine).runProgram(any());
+
+        RunResult result = dishWasher.start(program);
+        RunResult expectedResult =  RunResult.builder().withStatus(Status.ERROR_PROGRAM).build();
+
+        assertEquals(expectedResult.getStatus(), result.getStatus());
+    }
+
+    @Test
+    void ifWaterPumFailsShouldResultInPumpError () throws PumpException {
+        ProgramConfiguration program = properProgram();
+
+        Mockito.when(door.closed()).thenReturn(true);
+        Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
+        doThrow(PumpException.class).when(waterPump).drain();
+
+        RunResult result = dishWasher.start(program);
+        RunResult expectedResult =  RunResult.builder().withStatus(Status.ERROR_PUMP).build();
 
         assertEquals(expectedResult.getStatus(), result.getStatus());
     }

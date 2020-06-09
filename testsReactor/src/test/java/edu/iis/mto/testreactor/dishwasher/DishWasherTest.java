@@ -1,7 +1,5 @@
 package edu.iis.mto.testreactor.dishwasher;
 
-import static edu.iis.mto.testreactor.dishwasher.Status.DOOR_OPEN;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -10,7 +8,6 @@ import edu.iis.mto.testreactor.dishwasher.engine.Engine;
 import edu.iis.mto.testreactor.dishwasher.engine.EngineException;
 import edu.iis.mto.testreactor.dishwasher.pump.PumpException;
 import edu.iis.mto.testreactor.dishwasher.pump.WaterPump;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +42,7 @@ class DishWasherTest {
 
     @Test
     void properProgramShouldResultInProperResult () {
-        ProgramConfiguration program = properProgram();
+        ProgramConfiguration program = properProgram(true, notRinse);
 
         Mockito.when(door.closed()).thenReturn(true);
         Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
@@ -59,7 +56,7 @@ class DishWasherTest {
 
     @Test
     void doorOpenShouldResultInDoorError () {
-        ProgramConfiguration program = properProgram();
+        ProgramConfiguration program = properProgram(true, notRinse);
 
         Mockito.when(door.closed()).thenReturn(false);
 
@@ -71,7 +68,7 @@ class DishWasherTest {
 
     @Test
     void ifFilterIsNotCleanShouldResultInFilterError () {
-        ProgramConfiguration program = properProgram();
+        ProgramConfiguration program = properProgram(true, notRinse);
 
         Mockito.when(door.closed()).thenReturn(true);
         Mockito.when(dirtFilter.capacity()).thenReturn(0d);
@@ -84,7 +81,7 @@ class DishWasherTest {
 
     @Test
     void ifEngineFailsShouldResultInProgramError () throws EngineException {
-        ProgramConfiguration program = properProgram();
+        ProgramConfiguration program = properProgram(true, notRinse);
 
         Mockito.when(door.closed()).thenReturn(true);
         Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
@@ -98,7 +95,7 @@ class DishWasherTest {
 
     @Test
     void ifWaterPumFailsShouldResultInPumpError () throws PumpException {
-        ProgramConfiguration program = properProgram();
+        ProgramConfiguration program = properProgram(true, notRinse);
 
         Mockito.when(door.closed()).thenReturn(true);
         Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
@@ -112,7 +109,7 @@ class DishWasherTest {
 
     @Test
     void properProgramShouldCallDoorDirtFilterWaterPumpAndEngine () throws PumpException, EngineException {
-        ProgramConfiguration program = properProgram();
+        ProgramConfiguration program = properProgram(true, notRinse);
 
         Mockito.when(door.closed()).thenReturn(true);
         Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
@@ -136,7 +133,7 @@ class DishWasherTest {
 
     @Test
     void rinseProgramShouldCallWaterPumpAndEngineOnce () throws PumpException, EngineException {
-        ProgramConfiguration program = ProgramConfiguration.builder().withFillLevel(irrelevant).withProgram(WashingProgram.RINSE).withTabletsUsed(true).build();
+        ProgramConfiguration program = properProgram(true, WashingProgram.RINSE);
 
         Mockito.when(door.closed()).thenReturn(true);
         Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
@@ -158,7 +155,7 @@ class DishWasherTest {
 
     @Test
     void properProgramWithoutTabletsShouldNotCallDirtFilter () {
-        ProgramConfiguration program = ProgramConfiguration.builder().withFillLevel(irrelevant).withProgram(WashingProgram.RINSE).withTabletsUsed(false).build();
+        ProgramConfiguration program = properProgram(false, notRinse);
 
         Mockito.when(door.closed()).thenReturn(true);
 
@@ -168,8 +165,8 @@ class DishWasherTest {
 
     }
 
-    private ProgramConfiguration properProgram() {
-        return ProgramConfiguration.builder().withFillLevel(irrelevant).withProgram(notRinse).withTabletsUsed(true).build();
+    private ProgramConfiguration properProgram(Boolean ifTablets, WashingProgram program) {
+        return ProgramConfiguration.builder().withFillLevel(irrelevant).withProgram(program).withTabletsUsed(ifTablets).build();
     }
 
     private RunResult getResult(Status status) {

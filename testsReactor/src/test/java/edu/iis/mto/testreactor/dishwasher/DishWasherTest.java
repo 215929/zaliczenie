@@ -34,20 +34,23 @@ class DishWasherTest {
     WashingProgram notRinse = WashingProgram.ECO;
     FillLevel irrelevant = FillLevel.HALF;
 
+    private RunResult result;
+    RunResult expectedResult;
+
     @BeforeEach
     void init () {
         dishWasher = new DishWasher(waterPump, engine, dirtFilter, door);
     }
 
-       @Test
+    @Test
     void properProgramShouldResultInProperResult () {
         ProgramConfiguration program = properProgram();
 
         Mockito.when(door.closed()).thenReturn(true);
         Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
 
-        RunResult result = dishWasher.start(program);
-        RunResult expectedResult = RunResult.builder().withStatus(Status.SUCCESS).withRunMinutes(notRinse.getTimeInMinutes()).build();
+        result = dishWasher.start(program);
+        expectedResult = getResult(Status.SUCCESS);
 
         assertEquals(expectedResult.getStatus(), result.getStatus());
         assertEquals(expectedResult.getRunMinutes(), result.getRunMinutes());
@@ -59,8 +62,8 @@ class DishWasherTest {
 
         Mockito.when(door.closed()).thenReturn(false);
 
-        RunResult result = dishWasher.start(program);
-        RunResult expectedResult =  RunResult.builder().withStatus(Status.DOOR_OPEN).build();
+        result = dishWasher.start(program);
+        expectedResult = getResult(Status.DOOR_OPEN);
 
         assertEquals(expectedResult.getStatus(), result.getStatus());
     }
@@ -72,8 +75,8 @@ class DishWasherTest {
         Mockito.when(door.closed()).thenReturn(true);
         Mockito.when(dirtFilter.capacity()).thenReturn(0d);
 
-        RunResult result = dishWasher.start(program);
-        RunResult expectedResult =  RunResult.builder().withStatus(Status.ERROR_FILTER).build();
+        result = dishWasher.start(program);
+        expectedResult = getResult(Status.ERROR_FILTER);
 
         assertEquals(expectedResult.getStatus(), result.getStatus());
     }
@@ -86,8 +89,8 @@ class DishWasherTest {
         Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
         doThrow(EngineException.class).when(engine).runProgram(any());
 
-        RunResult result = dishWasher.start(program);
-        RunResult expectedResult =  RunResult.builder().withStatus(Status.ERROR_PROGRAM).build();
+        result = dishWasher.start(program);
+        expectedResult = getResult(Status.ERROR_PROGRAM);
 
         assertEquals(expectedResult.getStatus(), result.getStatus());
     }
@@ -100,14 +103,40 @@ class DishWasherTest {
         Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
         doThrow(PumpException.class).when(waterPump).drain();
 
-        RunResult result = dishWasher.start(program);
-        RunResult expectedResult =  RunResult.builder().withStatus(Status.ERROR_PUMP).build();
+        result = dishWasher.start(program);
+        expectedResult = getResult(Status.ERROR_PUMP);
 
         assertEquals(expectedResult.getStatus(), result.getStatus());
     }
+
+
 
     private ProgramConfiguration properProgram() {
         return ProgramConfiguration.builder().withFillLevel(irrelevant).withProgram(notRinse).withTabletsUsed(true).build();
     }
 
+    private RunResult getResult(Status status) {
+        RunResult result;
+        switch (status) {
+            case SUCCESS:
+                result = RunResult.builder().withStatus(Status.SUCCESS).withRunMinutes(notRinse.getTimeInMinutes()).build();
+                break;
+            case ERROR_PROGRAM:
+                result = RunResult.builder().withStatus(Status.ERROR_PROGRAM).build();
+                break;
+            case DOOR_OPEN:
+                result = RunResult.builder().withStatus(Status.DOOR_OPEN).build();
+                break;
+            case ERROR_FILTER:
+                result = RunResult.builder().withStatus(Status.ERROR_FILTER).build();
+                break;
+            case ERROR_PUMP:
+                result = RunResult.builder().withStatus(Status.ERROR_PUMP).build();
+                break;
+            default:
+                result = null;
+        }
+
+        return result;
+    }
 }

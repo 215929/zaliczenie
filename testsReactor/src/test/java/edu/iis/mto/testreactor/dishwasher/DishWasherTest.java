@@ -129,8 +129,44 @@ class DishWasherTest {
         callOrder.verify(engine).runProgram(any());
         callOrder.verify(waterPump).drain();
 
+        verify(waterPump, times(2)).pour(any());
+        verify(engine, times(2)).runProgram(any());
+        verify(waterPump, times(2)).drain();
     }
 
+    @Test
+    void rinseProgramShouldCallWaterPumpAndEngineOnce () throws PumpException, EngineException {
+        ProgramConfiguration program = ProgramConfiguration.builder().withFillLevel(irrelevant).withProgram(WashingProgram.RINSE).withTabletsUsed(true).build();
+
+        Mockito.when(door.closed()).thenReturn(true);
+        Mockito.when(dirtFilter.capacity()).thenReturn(100.0d);
+
+        dishWasher.start(program);
+
+        InOrder callOrder = inOrder(door, dirtFilter, waterPump, engine);
+        callOrder.verify(door).closed();
+        callOrder.verify(dirtFilter).capacity();
+        callOrder.verify(waterPump).pour(any());
+        callOrder.verify(engine).runProgram(any());
+        callOrder.verify(waterPump).drain();
+
+        verify(waterPump, times(1)).pour(any());
+        verify(engine, times(1)).runProgram(any());
+        verify(waterPump, times(1)).drain();
+
+    }
+
+    @Test
+    void properProgramWithoutTabletsShouldNotCallDirtFilter () {
+        ProgramConfiguration program = ProgramConfiguration.builder().withFillLevel(irrelevant).withProgram(WashingProgram.RINSE).withTabletsUsed(false).build();
+
+        Mockito.when(door.closed()).thenReturn(true);
+
+        dishWasher.start(program);
+
+        verify(dirtFilter, never()).capacity();
+
+    }
 
     private ProgramConfiguration properProgram() {
         return ProgramConfiguration.builder().withFillLevel(irrelevant).withProgram(notRinse).withTabletsUsed(true).build();
